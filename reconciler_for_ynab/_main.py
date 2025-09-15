@@ -135,7 +135,7 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
 
     print("Match found:")
     for t in sorted(to_reconcile, key=lambda t: t.amount):
-        print("*", t.pretty(budget_acct.currency, 'en_US'))
+        print("*", t.pretty(budget_acct.currency, "en_US"))
 
     if reconcile:
         await do_reconcile(token, budget_acct.budget_id, to_reconcile)
