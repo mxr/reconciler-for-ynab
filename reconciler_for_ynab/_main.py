@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import itertools
-import locale
 import os
 import re
 import sqlite3
@@ -134,10 +133,9 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
             print("No match found")
             return 1
 
-    language_code = locale.getdefaultlocale()[0]
     print("Match found:")
     for t in sorted(to_reconcile, key=lambda t: t.amount):
-        print("*", t.pretty(budget_acct.currency, language_code))
+        print("*", t.pretty(budget_acct.currency, 'en_US'))
 
     if reconcile:
         await do_reconcile(token, budget_acct.budget_id, to_reconcile)
