@@ -134,7 +134,7 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
             print("No match found")
             return 1
 
-    language_code = locale.getlocale()[0]
+    language_code = locale.getdefaultlocale()[0]
     print("Match found:")
     for t in sorted(to_reconcile, key=lambda t: t.amount):
         print("*", t.pretty(budget_acct.currency, language_code))
