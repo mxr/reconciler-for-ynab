@@ -6,7 +6,28 @@ Reconcile for YNAB - Reconcile YNAB transactions from the CLI
 
 ## What This Does
 
-When YNAB imports your transactions and balances in sync, reconciliation is simple. But if there’s a mismatch, it often means tedious work. I was frustrated with going line-by-line through records to find the difference so I wrote this tool. It streamlines the process: pick an account and target balance to get a list of transactions that must be reconciled to hit the balance, or let it reconcile automatically through the [YNAB API](https://api.ynab.com/).
+When YNAB imports your transactions and balances in sync, reconciliation is a simple one-click process. But sometimes there’s a mismatch, and hunting it down is tedious. I was frustrated with going line-by-line through records to find which transactions should be cleared and reconciled, so I wrote this tool. It streamlines the process by finding which transactions should be reconciled to match a target balance. It will either output the transactions to reconcile, or reconcile them automatically through the [YNAB API](https://api.ynab.com/).
+
+Suppose I want to automatically reconcile my credit card ending in 1234 to \$1,471.32. I can do that as follows:
+
+```console
+$ reconciler-for-ynab --reconcile --account-name-regex 'credit.+1234' --target 1471.32
+** Refreshing SQLite DB **
+Fetching budget data...
+Budget Data: 100%|████████████████████████████████████████| 10/10 [00:00<00:00, 52.24it/s]
+Done
+Inserting budget data...
+Payees: 100%|█████████████████████████████████████████████| 7/7 [00:00<00:00, 2252.93it/s]
+Transactions: 100%|████████████████████████████████████| 14/14 [00:00<00:00, 10605.07it/s]
+Done
+** Done **
+Testing combinations: 100%|██████████████████████████| 32/32 [00:00<00:00, 1065220.06it/s]
+Match found:
+*      $3.04 - Starbucks
+*     $45.14 - Caffe Panna
+Reconciling: 100%|██████████████████████████████████████████| 2/2 [00:00<00:00, 11.76it/s]
+Done
+```
 
 ## Installation
 
