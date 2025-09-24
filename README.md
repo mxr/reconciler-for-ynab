@@ -11,7 +11,7 @@ When YNAB imports your transactions and balances in sync, reconciliation is a si
 Suppose I want to automatically reconcile my credit card ending in 1234 to \$1,471.52. I can do that as follows:
 
 ```console
-$ reconciler-for-ynab --reconcile --account-name-regex 'credit.+1234' --target 1471.32 
+$ reconciler-for-ynab --reconcile --account-name-regex 'credit.+1234' --target 1471.32
 ** Refreshing SQLite DB **
 Fetching budget data...
 Budget Data: 100%|████████████████████████████████████████████████████████| 10/10 [00:00<00:00, 52.24it/s]
