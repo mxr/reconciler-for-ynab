@@ -63,7 +63,8 @@ $ reconciler-for-ynab --account-name-regex 1234 --target 500.30 --reconcile
 
 ```console
 $ reconcile-for-ynab --help
-usage: reconciler-for-ynab [-h] --account-name-regex ACCOUNT_NAME_REGEX --target TARGET [--reconcile] [--sqlite-export-for-ynab-db SQLITE_EXPORT_FOR_YNAB_DB]
+usage: reconciler-for-ynab [-h] --account-name-regex ACCOUNT_NAME_REGEX --target TARGET
+                           [--reconcile] [--sqlite-export-for-ynab-db SQLITE_EXPORT_FOR_YNAB_DB]
                            [--sqlite-export-for-ynab-full-refresh] [--version]
 
 options:
@@ -71,10 +72,13 @@ options:
   --account-name-regex ACCOUNT_NAME_REGEX
                         Regex to match account name (must match exactly one account)
   --target TARGET       Target balance to match towards for reconciliation
-  --reconcile           Whether to actually perform the reconciliation - if not set, just shows the transcations that would be reconciled
+  --reconcile           Whether to actually perform the reconciliation - if not set, just shows
+                        the transcations that would be reconciled
   --sqlite-export-for-ynab-db SQLITE_EXPORT_FOR_YNAB_DB
-                        Path to sqlite-export-for-ynab SQLite DB file (respects sqlite-export-for-ynab configuration)
+                        Path to sqlite-export-for-ynab SQLite DB file (respects sqlite-export-for-
+                        ynab configuration)
   --sqlite-export-for-ynab-full-refresh
-                        Whether to do a full refresh of the YNAB data - if not set, only does an incremental refresh
+                        Whether to do a full refresh of the YNAB data - if not set, only does an
+                        incremental refresh
   --version             show program's version number and exit
 ```
