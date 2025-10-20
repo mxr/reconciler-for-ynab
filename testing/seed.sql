@@ -71,7 +71,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Checking' ORDER BY id LIMIT 1
+        WHERE name = 'Checking'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , 400000
@@ -89,7 +90,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Checking' ORDER BY id LIMIT 1
+        WHERE name = 'Checking'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , 30000
@@ -107,7 +109,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Checking' ORDER BY id LIMIT 1
+        WHERE name = 'Checking'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , 60000
@@ -125,7 +128,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Checking' ORDER BY id LIMIT 1
+        WHERE name = 'Checking'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , 20000
@@ -144,7 +148,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Checking' ORDER BY id LIMIT 1
+        WHERE name = 'Checking'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , 10000
@@ -163,7 +168,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Credit Card' ORDER BY id LIMIT 1
+        WHERE name = 'Credit Card'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , -400000
@@ -181,7 +187,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Credit Card' ORDER BY id LIMIT 1
+        WHERE name = 'Credit Card'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , -30000
@@ -199,7 +206,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Credit Card' ORDER BY id LIMIT 1
+        WHERE name = 'Credit Card'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , -60000
@@ -217,7 +225,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Credit Card' ORDER BY id LIMIT 1
+        WHERE name = 'Credit Card'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , -20000
@@ -236,7 +245,8 @@ INSERT INTO transactions VALUES (
     )
     , (
         SELECT id FROM accounts
-        WHERE name = 'Credit Card' ORDER BY id LIMIT 1
+        WHERE name = 'Credit Card'
+        ORDER BY id LIMIT 1
     )
     , '2025-08-01'
     , -10000
