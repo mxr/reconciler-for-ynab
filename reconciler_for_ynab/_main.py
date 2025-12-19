@@ -18,7 +18,7 @@ import aiohttp
 from babel.numbers import format_currency
 from sqlite_export_for_ynab import default_db_path
 from sqlite_export_for_ynab import sync
-from tqdm import tqdm
+from tldm import tldm
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -239,7 +239,7 @@ def find_to_reconcile(
         return (), True
 
     remaining = 2 ** len(uncleared)
-    with tqdm(total=remaining, desc="Testing combinations") as pbar:
+    with tldm(total=remaining, desc="Testing combinations") as pbar:
         for n in range(len(uncleared) + 1):
             for combo in itertools.combinations(uncleared, n):
                 if (
@@ -260,7 +260,7 @@ async def do_reconcile(
     token: str, budget_id: str, to_reconcile: Sequence[Transaction]
 ) -> None:
     yc = YnabClient(token)
-    with tqdm(total=len(to_reconcile), desc="Reconciling") as pbar:
+    with tldm(total=len(to_reconcile), desc="Reconciling") as pbar:
         async with aiohttp.ClientSession() as session:
             try:
                 await yc.reconcile(
@@ -309,7 +309,7 @@ class YnabClient:
     async def reconcile(
         self,
         session: aiohttp.ClientSession,
-        pbar: tqdm,
+        pbar: tldm,
         budget_id: str,
         transaction_ids: list[str],
     ) -> None:
