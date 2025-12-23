@@ -238,7 +238,11 @@ def find_to_reconcile(
     if reconciled_balance == target and not cleared:
         return (), True
 
-    with tldm(total=2 ** len(uncleared), desc="Testing combinations", complete_bar_on_early_finish=True) as pbar:
+    with tldm(
+        total=2 ** len(uncleared),
+        desc="Testing combinations",
+        complete_bar_on_early_finish=True,
+    ) as pbar:
         for n in range(len(uncleared) + 1):
             for combo in itertools.combinations(uncleared, n):
                 if (
