@@ -70,7 +70,7 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--reconcile",
         action="store_true",
-        help="Whether to actually perform the reconciliation - if not set, just shows the transcations that would be reconciled",
+        help="Whether to actually perform the reconciliation - if unset, this tool only prints the transactions that would be reconciled",
     )
     parser.add_argument(
         "--sqlite-export-for-ynab-db",
