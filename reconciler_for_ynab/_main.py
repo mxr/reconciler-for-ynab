@@ -81,7 +81,7 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--sqlite-export-for-ynab-full-refresh",
         action="store_true",
-        help="Whether to do a full refresh of the YNAB data - if not set, only does an incremental refresh",
+        help="Whether **DROP ALL TABLES** and fetch all budget data again. If unset, this tool only does an incremental refresh",
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {version(_PACKAGE)}"
