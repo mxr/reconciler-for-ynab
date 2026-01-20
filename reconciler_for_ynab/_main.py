@@ -238,7 +238,7 @@ def find_to_reconcile(
     if reconciled_balance == target and not cleared:
         return (), True
 
-    with tldm(
+    with tldm[int](
         total=2 ** len(uncleared),
         desc="Testing combinations",
         complete_bar_on_early_finish=True,
@@ -260,7 +260,7 @@ async def do_reconcile(
     token: str, budget_id: str, to_reconcile: Sequence[Transaction]
 ) -> None:
     yc = YnabClient(token)
-    with tldm(total=len(to_reconcile), desc="Reconciling") as pbar:
+    with tldm[int](total=len(to_reconcile), desc="Reconciling") as pbar:
         async with aiohttp.ClientSession() as session:
             try:
                 await yc.reconcile(
@@ -309,7 +309,7 @@ class YnabClient:
     async def reconcile(
         self,
         session: aiohttp.ClientSession,
-        pbar: tldm,
+        pbar: tldm[int],
         budget_id: str,
         transaction_ids: list[str],
     ) -> None:
