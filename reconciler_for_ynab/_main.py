@@ -12,7 +12,8 @@ from decimal import Decimal
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
-from typing import TYPE_CHECKING, Never
+from typing import Never
+from typing import TYPE_CHECKING
 
 import aiohttp
 from babel.numbers import format_currency
