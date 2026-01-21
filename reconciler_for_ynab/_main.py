@@ -12,6 +12,7 @@ from decimal import Decimal
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
+from typing import Never
 from typing import TYPE_CHECKING
 
 import aiohttp
@@ -238,7 +239,7 @@ def find_to_reconcile(
     if reconciled_balance == target and not cleared:
         return (), True
 
-    with tldm[int](
+    with tldm[Never](
         total=2 ** len(uncleared),
         desc="Testing combinations",
         complete_bar_on_early_finish=True,
@@ -260,7 +261,7 @@ async def do_reconcile(
     token: str, budget_id: str, to_reconcile: Sequence[Transaction]
 ) -> None:
     yc = YnabClient(token)
-    with tldm[int](total=len(to_reconcile), desc="Reconciling") as pbar:
+    with tldm[Never](total=len(to_reconcile), desc="Reconciling") as pbar:
         async with aiohttp.ClientSession() as session:
             try:
                 await yc.reconcile(
@@ -309,7 +310,7 @@ class YnabClient:
     async def reconcile(
         self,
         session: aiohttp.ClientSession,
-        pbar: tldm[int],
+        pbar: tldm[Never],
         budget_id: str,
         transaction_ids: list[str],
     ) -> None:
