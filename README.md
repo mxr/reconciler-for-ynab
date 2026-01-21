@@ -72,13 +72,13 @@ options:
   --account-name-regex ACCOUNT_NAME_REGEX
                         Regex to match account name (must match exactly one account)
   --target TARGET       Target balance to match towards for reconciliation
-  --reconcile           Whether to actually perform the reconciliation - if not set, just shows
-                        the transcations that would be reconciled
+  --reconcile           Whether to actually perform the reconciliation - if unset, this tool only
+                        prints the transactions that would be reconciled
   --sqlite-export-for-ynab-db SQLITE_EXPORT_FOR_YNAB_DB
                         Path to sqlite-export-for-ynab SQLite DB file (respects sqlite-export-for-
                         ynab configuration)
   --sqlite-export-for-ynab-full-refresh
-                        Whether to do a full refresh of the YNAB data - if not set, only does an
-                        incremental refresh
+                        "Whether **DROP ALL TABLES** and fetch all budget data again. If unset,
+                        this tool only does an incremental refresh
   --version             show program's version number and exit
 ```
