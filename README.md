@@ -14,19 +14,19 @@ Suppose I want to automatically reconcile my credit card ending in 1234 to \$1,4
 $ reconciler-for-ynab --reconcile --account-name-regex 'credit.+1234' --target 1471.32
 ** Refreshing SQLite DB **
 Fetching budget data...
-Budget Data: 100%|████████████████████████████████████████| 10/10 [00:00<00:00, 52.24it/s]
+Budget Data: 100%|███████████████████████████████████████████████████████| 10/10 [00:00<00:00, 52.24it/s]
 Done
 Inserting budget data...
-Payees: 100%|█████████████████████████████████████████████| 7/7 [00:00<00:00, 2252.93it/s]
-Transactions: 100%|████████████████████████████████████| 14/14 [00:00<00:00, 10605.07it/s]
+Payees: 100%|████████████████████████████████████████████████████████████| 7/7 [00:00<00:00, 2252.93it/s]
+Transactions: 100%|███████████████████████████████████████████████████| 14/14 [00:00<00:00, 10605.07it/s]
 Done
 ** Done **
-Testing combinations: 100%|██████████████████████████| 32/32 [00:00<00:00, 1065220.06it/s]
-Match found:
-*      $3.04 - Starbucks
-*     $45.14 - Caffe Panna
-Reconciling: 100%|██████████████████████████████████████████| 2/2 [00:00<00:00, 11.76it/s]
-Done
+[Credit Card]: Testing combinations: 100%|██████████████████████████| 32/32 [00:00<00:00, 1065220.06it/s]
+[Credit Card] Match found:
+[Credit Card] *      $3.04 - Starbucks
+[Credit Card] *     $45.14 - Caffe Panna
+[Credit Card] Reconciling: 100%|███████████████████████████████████████████| 2/2 [00:00<00:00, 11.76it/s]
+[Credit Card] Done
 ```
 
 ## Installation
@@ -63,6 +63,19 @@ You can set `--mode` to `batch` to process multiple accounts at once:
 
 ```console
 $ reconciler-for-ynab --reconcile --mode batch --account-target-pairs 'Checking=500' 'Credit=290'
+[Checking]: Testing combinations: 100%|████████████████████████| 32/32 [00:00<00:00, 800000.00it/s]
+[Checking] Match found:
+[Checking] *      $10.00 - Payee
+[Checking] *      $20.00 - Payee
+[Checking] Reconciling: 100%|████████████████████████████████████████| 2/2 [00:00<00:00, 20.00it/s]
+[Checking] Done
+[Credit Card]: Testing combinations: 100%|█████████████████████| 32/32 [00:00<00:00, 800000.00it/s]
+[Credit Card] Match found:
+[Credit Card] *      $10.00 - Payee
+[Credit Card] *      $20.00 - Payee
+[Credit Card] Reconciling: 100%|█████████████████████████████████████| 2/2 [00:00<00:00, 20.00it/s]
+[Credit Card] Done
+Batch reconciling done.
 ```
 
 ### All Options
