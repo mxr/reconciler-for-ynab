@@ -13,7 +13,7 @@ from reconciler_for_ynab._main import _ENV_TOKEN
 from reconciler_for_ynab._main import _PACKAGE
 from reconciler_for_ynab._main import _row_factory
 from reconciler_for_ynab._main import do_reconcile
-from reconciler_for_ynab._main import fetch_budget_acct
+from reconciler_for_ynab._main import fetch_budget_accts
 from reconciler_for_ynab._main import fetch_transactions
 from reconciler_for_ynab._main import main
 from reconciler_for_ynab._main import YnabClient
@@ -118,6 +118,55 @@ def test_main_no_token(monkeypatch):
     assert "Must set YNAB access token" in str(excinfo.value)
 
 
+def test_main_mode_single_requires_single_targeting_params():
+    with pytest.raises(ValueError) as excinfo:
+        main(())
+
+    assert "--mode single" in str(excinfo.value)
+
+
+def test_main_mode_single_rejects_batch_targeting_params():
+    with pytest.raises(ValueError) as excinfo:
+        main(("--account-target-pairs", "Checking=500"))
+
+    assert "--account-target-pairs" in str(excinfo.value)
+
+
+def test_main_mode_batch_requires_account_target_pairs():
+    with pytest.raises(ValueError) as excinfo:
+        main(("--mode", "batch"))
+
+    assert "--account-target-pairs" in str(excinfo.value)
+
+
+def test_main_mode_batch_rejects_single_targeting_params():
+    with pytest.raises(ValueError) as excinfo:
+        main(("--mode", "batch", "--account-name-regex", "Checking", "--target", "500"))
+
+    assert "--mode batch" in str(excinfo.value)
+
+
+@patch("reconciler_for_ynab._main.sync")
+@pytest.mark.usefixtures(db.__name__)
+def test_main_mode_batch(sync, db, monkeypatch):
+    monkeypatch.setenv(_ENV_TOKEN, TOKEN)
+
+    ret = main(
+        (
+            "--mode",
+            "batch",
+            "--account-target-pairs",
+            "Checking=500",
+            "Credit=290",
+            "--sqlite-export-for-ynab-db",
+            db,
+        )
+    )
+
+    sync.assert_called()
+    assert ret == 0
+
+
 @patch("reconciler_for_ynab._main.sync")
 @pytest.mark.usefixtures(db.__name__)
 @pytest.mark.parametrize(
@@ -142,7 +191,7 @@ def test_main_not_one_account(sync, db, monkeypatch, regex, substr):
             )
         )
 
-    assert "Must have only one account" in str(excinfo.value)
+    assert "Must have 1 total account matches" in str(excinfo.value)
     assert substr in str(excinfo.value)
 
 
@@ -159,7 +208,7 @@ async def test_main_do_reconcile(sync, db, mock_aioresponses):
 
         cur = con.cursor()
 
-        transactions = fetch_transactions(cur, fetch_budget_acct(cur, "checking"))
+        transactions = fetch_transactions(cur, fetch_budget_accts(cur, ["checking"]))[0]
 
     mock_aioresponses.patch(
         re.compile("https://api.ynab.com/v1/budgets/.+/transactions"),
@@ -190,7 +239,7 @@ async def test_main_do_reconcile_error_4034(sync, db, mock_aioresponses):
 
         cur = con.cursor()
 
-        transactions = fetch_transactions(cur, fetch_budget_acct(cur, "checking"))
+        transactions = fetch_transactions(cur, fetch_budget_accts(cur, ["checking"]))[0]
 
     mock_aioresponses.patch(
         re.compile("https://api.ynab.com/v1/budgets/.+/transactions"),

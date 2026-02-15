@@ -50,28 +50,59 @@ $ export YNAB_PERSONAL_ACCESS_TOKEN="..."
 Run the tool from the terminal to print out the transactions:
 
 ```console
-$ reconciler-for-ynab --account-name-regex 1234 --target 500.30
+$ reconciler-for-ynab --mode single --account-name-regex 1234 --target 500.30
 ```
 
 Run it again with `--reconcile` to reconcile the account.
 
 ```console
-$ reconciler-for-ynab --account-name-regex 1234 --target 500.30 --reconcile
+$ reconciler-for-ynab --mode single --account-name-regex 1234 --target 500.30 --reconcile
+```
+
+`--mode` defaults to `single`, so you can omit it:
+
+```console
+$ reconciler-for-ynab --account-name-regex 1234 --target 500.30
+```
+
+### Modes
+
+`single` mode:
+- Uses `--account-name-regex` and `--target`.
+- `--account-target-pairs` is not allowed.
+
+`batch` mode:
+- Uses `--account-target-pairs` (one or more values).
+- `--account-name-regex` and `--target` are not allowed.
+- Pair format is `ACCOUNT_NAME_REGEX=TARGET`.
+
+Example:
+
+```console
+$ reconciler-for-ynab --mode batch --account-target-pairs 'Checking=500' 'Credit=290'
 ```
 
 ### All Options
 
 ```console
 $ reconcile-for-ynab --help
-usage: reconciler-for-ynab [-h] --account-name-regex ACCOUNT_NAME_REGEX --target TARGET
+usage: reconciler-for-ynab [-h] [--mode {single,batch}]
+                           [--account-name-regex ACCOUNT_NAME_REGEX] [--target TARGET]
+                           [--account-target-pairs ACCOUNT_TARGET_PAIRS [ACCOUNT_TARGET_PAIRS ...]]
                            [--reconcile] [--sqlite-export-for-ynab-db SQLITE_EXPORT_FOR_YNAB_DB]
                            [--sqlite-export-for-ynab-full-refresh] [--version]
 
 options:
   -h, --help            show this help message and exit
+  --mode {single,batch}
+                        Reconciliation mode. `single` uses --account-name-regex/--target.
+                        `batch` uses --account-target-pairs.
   --account-name-regex ACCOUNT_NAME_REGEX
                         Regex to match account name (must match exactly one account)
   --target TARGET       Target balance to match towards for reconciliation
+  --account-target-pairs ACCOUNT_TARGET_PAIRS [ACCOUNT_TARGET_PAIRS ...]
+                        Batch mode only. Account regex/target pairs (format:
+                        ACCOUNT_NAME_REGEX=TARGET).
   --reconcile           Whether to actually perform the reconciliation - if unset, this tool only
                         prints the transactions that would be reconciled
   --sqlite-export-for-ynab-db SQLITE_EXPORT_FOR_YNAB_DB
