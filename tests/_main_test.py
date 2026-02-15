@@ -150,13 +150,23 @@ def test_main_mode_batch_rejects_single_targeting_params():
 @pytest.mark.usefixtures(db.__name__)
 def test_main_mode_batch(sync, db, monkeypatch):
     monkeypatch.setenv(_ENV_TOKEN, TOKEN)
+    with sqlite3.connect(db) as con:
+        # Force one batch account to have no unreconciled transactions so we
+        # verify grouped transaction output still includes an empty entry.
+        con.execute(
+            """
+            UPDATE transactions
+            SET cleared = 'reconciled'
+            WHERE account_id = (SELECT id FROM accounts WHERE name = 'Checking')
+            """
+        )
 
     ret = main(
         (
             "--mode",
             "batch",
             "--account-target-pairs",
-            "Checking=500",
+            "Checking=430",
             "Credit=290",
             "--sqlite-export-for-ynab-db",
             db,

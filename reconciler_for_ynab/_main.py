@@ -292,13 +292,14 @@ def fetch_transactions(
                 AND cleared != 'reconciled'
                 AND NOT deleted
                 AND ({" OR ".join("account_id = ?" for _ in budget_accts)})
-            ORDER BY account_id, date
+            ORDER BY date
             """,
         tuple(b.account_id for b in budget_accts),
     ).fetchall()
 
-    return [
-        [
+    grouped: dict[str, list[Transaction]] = {b.account_id: [] for b in budget_accts}
+    for u in unreconciled:
+        grouped[u["account_id"]].append(
             Transaction(
                 u["budget_id"],
                 u["id"],
@@ -306,10 +307,9 @@ def fetch_transactions(
                 u["payee_name"],
                 u["cleared"],
             )
-            for u in g
-        ]
-        for _, g in itertools.groupby(unreconciled, key=lambda u: u["account_id"])
-    ]
+        )
+
+    return list(grouped.values())
 
 
 def find_to_reconcile(
