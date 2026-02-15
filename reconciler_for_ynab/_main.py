@@ -154,20 +154,17 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
         budget_accts = fetch_budget_accts(cur, account_name_regexes)
         transactions = fetch_transactions(cur, budget_accts)
 
-    rets = await asyncio.gather(
-        *(
-            _reconcile_account(
+    rets = []
+    for rt, acct, txns in zip(raw_targets, budget_accts, transactions, strict=True):
+        rets.append(
+            await _reconcile_account(
                 token,
                 acct,
                 txns,
                 rt * (-1 if acct.account_type in _NEGATIVE_BAL_ACCOOUNT_TYPES else 1),
                 reconcile,
             )
-            for rt, acct, txns in zip(
-                raw_targets, budget_accts, transactions, strict=True
-            )
         )
-    )
 
     if len(rets) > 1:
         print("Batch reconciling done.")
