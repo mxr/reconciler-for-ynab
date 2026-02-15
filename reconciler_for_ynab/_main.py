@@ -200,7 +200,8 @@ async def _reconcile_account(
     reconcile: bool,
 ) -> tuple[int, list[str]]:
     prefix = f"[{budget_acct.account_name}]"
-    logs: list[str] = []
+    logs = []
+
     to_reconcile, balance_met = find_to_reconcile(
         transactions,
         budget_acct.cleared_balance,
