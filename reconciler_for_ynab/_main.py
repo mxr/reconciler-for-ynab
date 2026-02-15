@@ -75,7 +75,10 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--account-target-pairs",
         nargs="+",
-        help="Batch mode only. Account regex/target pairs (format to be implemented).",
+        help=(
+            "Batch mode only. Account regex/target pairs in "
+            "`ACCOUNT_NAME_REGEX=TARGET` format (example: `Checking=500.30`)."
+        ),
     )
     parser.add_argument(
         "--reconcile",
