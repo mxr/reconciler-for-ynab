@@ -233,7 +233,7 @@ async def test_main_do_reconcile(sync, db, mock_aioresponses):
         ),
     )
 
-    await do_reconcile(TOKEN, BUDGET_ID, transactions)
+    await do_reconcile(TOKEN, BUDGET_ID, transactions, "Reconciling")
 
 
 @pytest.mark.asyncio
@@ -273,4 +273,4 @@ async def test_main_do_reconcile_error_4034(sync, db, mock_aioresponses):
             ),
         )
 
-    await do_reconcile(TOKEN, BUDGET_ID, transactions)
+    await do_reconcile(TOKEN, BUDGET_ID, transactions, "Reconciling")

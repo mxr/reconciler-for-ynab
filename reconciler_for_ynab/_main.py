@@ -49,6 +49,7 @@ class Transaction:
 @dataclass(frozen=True)
 class BudgetAccount:
     budget_id: str
+    account_name: str
     account_id: str
     account_type: str
     cleared_balance: Decimal
@@ -154,10 +155,9 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
         budget_accts = fetch_budget_accts(cur, account_name_regexes)
         transactions = fetch_transactions(cur, budget_accts)
 
-    rets = []
-    for rt, acct, txns in zip(raw_targets, budget_accts, transactions, strict=True):
-        rets.append(
-            await _reconcile_account(
+    tasks = [
+        asyncio.create_task(
+            _reconcile_account(
                 token,
                 acct,
                 txns,
@@ -165,6 +165,14 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
                 reconcile,
             )
         )
+        for rt, acct, txns in zip(raw_targets, budget_accts, transactions, strict=True)
+    ]
+    rets = []
+    for task in asyncio.as_completed(tasks):
+        ret, logs = await task
+        for line in logs:
+            print(line)
+        rets.append(ret)
 
     if len(rets) > 1:
         print("Batch reconciling done.")
@@ -190,28 +198,38 @@ async def _reconcile_account(
     transactions: list[Transaction],
     target: Decimal,
     reconcile: bool,
-) -> int:
+) -> tuple[int, list[str]]:
+    prefix = f"[{budget_acct.account_name}]"
+    logs: list[str] = []
     to_reconcile, balance_met = find_to_reconcile(
-        transactions, budget_acct.cleared_balance, target
+        transactions,
+        budget_acct.cleared_balance,
+        target,
+        progress_desc=f"{prefix} Testing combinations",
     )
 
     if not to_reconcile:
         if balance_met:
-            print("Balance already reconciled to target")
-            return 0
+            logs.append(f"{prefix} Balance already reconciled to target")
+            return 0, logs
         else:
-            print("No match found")
-            return 1
+            logs.append(f"{prefix} No match found")
+            return 1, logs
 
-    print("Match found:")
+    logs.append(f"{prefix} Match found:")
     for t in sorted(to_reconcile, key=lambda t: t.amount):
-        print("*", t.pretty(budget_acct.currency, "en_US"))
+        logs.append(f"{prefix} * {t.pretty(budget_acct.currency, 'en_US')}")
 
     if reconcile:
-        await do_reconcile(token, budget_acct.budget_id, to_reconcile)
+        await do_reconcile(
+            token,
+            budget_acct.budget_id,
+            to_reconcile,
+            progress_desc=f"{prefix} Reconciling",
+        )
 
-    print("Done")
-    return 0
+    logs.append(f"{prefix} Done")
+    return 0, logs
 
 
 def fetch_budget_accts(
@@ -251,6 +269,7 @@ def fetch_budget_accts(
     return [
         BudgetAccount(
             budget_id=b["budget_id"],
+            account_name=b["account_name"],
             account_id=b["account_id"],
             cleared_balance=Decimal(-b["cleared_balance"]) / 1000,
             account_type=b["account_type"],
@@ -310,7 +329,10 @@ def fetch_transactions(
 
 
 def find_to_reconcile(
-    transactions: list[Transaction], account_balance: Decimal, target: Decimal
+    transactions: list[Transaction],
+    account_balance: Decimal,
+    target: Decimal,
+    progress_desc: str,
 ) -> tuple[tuple[Transaction, ...], bool]:
     cleared, uncleared = partition(transactions, lambda t: t.cleared == "cleared")
 
@@ -320,7 +342,7 @@ def find_to_reconcile(
 
     with tldm[Never](
         total=2 ** len(uncleared),
-        desc="Testing combinations",
+        desc=progress_desc,
         complete_bar_on_early_finish=True,
     ) as pbar:
         for n in range(len(uncleared) + 1):
@@ -337,10 +359,13 @@ def find_to_reconcile(
 
 
 async def do_reconcile(
-    token: str, budget_id: str, to_reconcile: Sequence[Transaction]
+    token: str,
+    budget_id: str,
+    to_reconcile: Sequence[Transaction],
+    progress_desc: str,
 ) -> None:
     yc = YnabClient(token)
-    with tldm[Never](total=len(to_reconcile), desc="Reconciling") as pbar:
+    with tldm[Never](total=len(to_reconcile), desc=progress_desc) as pbar:
         async with aiohttp.ClientSession() as session:
             try:
                 await yc.reconcile(
