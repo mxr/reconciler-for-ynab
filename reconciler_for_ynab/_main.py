@@ -49,6 +49,7 @@ class Transaction:
 @dataclass(frozen=True)
 class BudgetAccount:
     budget_id: str
+    account_name: str
     account_id: str
     account_type: str
     cleared_balance: Decimal
@@ -58,15 +59,27 @@ class BudgetAccount:
 async def async_main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog=_PACKAGE)
     parser.add_argument(
+        "--mode",
+        choices=("single", "batch"),
+        default="single",
+        help="Reconciliation mode. `single` uses --account-name-regex/--target. `batch` uses --account-target-pairs.",
+    )
+    parser.add_argument(
         "--account-name-regex",
-        required=True,
         help="Regex to match account name (must match exactly one account)",
     )
     parser.add_argument(
         "--target",
-        required=True,
         type=lambda s: Decimal(re.sub("[,$]", "", s)),
         help="Target balance to match towards for reconciliation",
+    )
+    parser.add_argument(
+        "--account-target-pairs",
+        nargs="+",
+        help=(
+            "Batch mode only. Account regex/target pairs in "
+            "`ACCOUNT_NAME_REGEX=TARGET` format (example: `Checking=500.30`)."
+        ),
     )
     parser.add_argument(
         "--reconcile",
@@ -89,11 +102,35 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
     )
 
     args = parser.parse_args(argv)
-    account_name_regex: str = args.account_name_regex
-    raw_target: Decimal = args.target
+    mode: str = args.mode
+    account_name_regex: str | None = args.account_name_regex
+    raw_target: Decimal | None = args.target
+    account_target_pairs: list[str] | None = args.account_target_pairs
     reconcile: bool = args.reconcile
     db: Path = args.sqlite_export_for_ynab_db
     full_refresh: bool = args.sqlite_export_for_ynab_full_refresh
+
+    if mode == "single":
+        if account_target_pairs:
+            raise ValueError(
+                "`--account-target-pairs` is only valid when `--mode batch` is selected."
+            )
+        if account_name_regex is None or raw_target is None:
+            raise ValueError(
+                "`--mode single` requires both `--account-name-regex` and `--target`."
+            )
+        account_name_regexes = [account_name_regex]
+        raw_targets = [raw_target]
+    else:
+        assert mode == "batch"
+        if account_name_regex is not None or raw_target is not None:
+            raise ValueError(
+                "`--mode batch` cannot be used with `--account-name-regex` or `--target`; "
+                "use `--account-target-pairs` instead."
+            )
+        if not account_target_pairs:
+            raise ValueError("`--mode batch` requires `--account-target-pairs`.")
+        account_name_regexes, raw_targets = _parse_account_targets(account_target_pairs)
 
     token = os.environ.get(_ENV_TOKEN)
     if not token:
@@ -115,40 +152,92 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
 
         cur = con.cursor()
 
-        budget_acct = fetch_budget_acct(cur, account_name_regex)
-        transactions = fetch_transactions(cur, budget_acct)
+        budget_accts = fetch_budget_accts(cur, account_name_regexes)
+        transactions = fetch_transactions(cur, budget_accts)
 
-    target = (
-        -1 if budget_acct.account_type in _NEGATIVE_BAL_ACCOOUNT_TYPES else 1
-    ) * raw_target
+    tasks = [
+        asyncio.create_task(
+            _reconcile_account(
+                token,
+                acct,
+                txns,
+                rt * (-1 if acct.account_type in _NEGATIVE_BAL_ACCOOUNT_TYPES else 1),
+                reconcile,
+            )
+        )
+        for rt, acct, txns in zip(raw_targets, budget_accts, transactions, strict=True)
+    ]
+    rets = []
+    for task in asyncio.as_completed(tasks):
+        ret, logs = await task
+        for line in logs:
+            print(line)
+        rets.append(ret)
+
+    if len(rets) > 1:
+        print("Batch reconciling done.")
+
+    return max(rets)
+
+
+def _parse_account_targets(
+    account_target_pairs: list[str],
+) -> tuple[list[str], list[Decimal]]:
+    account_name_regexes: list[str] = []
+    raw_targets: list[Decimal] = []
+    for pair in account_target_pairs:
+        regex, _, target = pair.partition("=")
+        account_name_regexes.append(regex)
+        raw_targets.append(Decimal(re.sub("[,$]", "", target)))
+    return account_name_regexes, raw_targets
+
+
+async def _reconcile_account(
+    token: str,
+    budget_acct: BudgetAccount,
+    transactions: list[Transaction],
+    target: Decimal,
+    reconcile: bool,
+) -> tuple[int, list[str]]:
+    prefix = f"[{budget_acct.account_name}]"
+    logs = []
 
     to_reconcile, balance_met = find_to_reconcile(
-        transactions, budget_acct.cleared_balance, target
+        transactions,
+        budget_acct.cleared_balance,
+        target,
+        progress_desc=f"{prefix} Testing combinations",
     )
 
     if not to_reconcile:
         if balance_met:
-            print("Balance already reconciled to target")
-            return 0
+            logs.append(f"{prefix} Balance already reconciled to target")
+            return 0, logs
         else:
-            print("No match found")
-            return 1
+            logs.append(f"{prefix} No match found")
+            return 1, logs
 
-    print("Match found:")
+    logs.append(f"{prefix} Match found:")
     for t in sorted(to_reconcile, key=lambda t: t.amount):
-        print("*", t.pretty(budget_acct.currency, "en_US"))
+        logs.append(f"{prefix} * {t.pretty(budget_acct.currency, 'en_US')}")
 
     if reconcile:
-        await do_reconcile(token, budget_acct.budget_id, to_reconcile)
+        await do_reconcile(
+            token,
+            budget_acct.budget_id,
+            to_reconcile,
+            progress_desc=f"{prefix} Reconciling",
+        )
 
-    print("Done")
+    logs.append(f"{prefix} Done")
+    return 0, logs
 
-    return 0
 
-
-def fetch_budget_acct(cur: sqlite3.Cursor, account_name_regex: str) -> BudgetAccount:
+def fetch_budget_accts(
+    cur: sqlite3.Cursor, account_name_regexes: list[str]
+) -> list[BudgetAccount]:
     budget_accts = cur.execute(
-        """
+        f"""
             SELECT
                 budgets.id as budget_id
                 , budgets.name as budget_name
@@ -163,28 +252,32 @@ def fetch_budget_acct(cur: sqlite3.Cursor, account_name_regex: str) -> BudgetAcc
                 ON accounts.budget_id = budgets.id
             WHERE
                 TRUE
-                AND REGEXP(accounts.name, ?)
                 AND NOT deleted
                 AND NOT closed
+                AND ({" OR ".join("REGEXP(accounts.name, ?)" for _ in account_name_regexes)})
             ORDER BY budget_name, account_name
             """,
-        (account_name_regex,),
+        tuple(account_name_regexes),
     ).fetchall()
 
-    if len(budget_accts) != 1:
+    if len(budget_accts) != len(account_name_regexes):
         raise ValueError(
-            f"\n❌ Must have only one account matching --account-name-regex={account_name_regex!r}, "
+            f"\n❌ Must have {len(account_name_regexes)} total account matches for the supplied pairs, "
             f"but instead found: {_pretty(budget_accts)}\n"
-            "Change --account-name-regex to be more precise and try again."
+            "Change account regexes to be more precise and try again."
         )
 
-    return BudgetAccount(
-        budget_id=budget_accts[0]["budget_id"],
-        account_id=budget_accts[0]["account_id"],
-        cleared_balance=Decimal(-budget_accts[0]["cleared_balance"]) / 1000,
-        account_type=budget_accts[0]["account_type"],
-        currency=budget_accts[0]["currency_format_currency_symbol"],
-    )
+    return [
+        BudgetAccount(
+            budget_id=b["budget_id"],
+            account_name=b["account_name"],
+            account_id=b["account_id"],
+            cleared_balance=Decimal(-b["cleared_balance"]) / 1000,
+            account_type=b["account_type"],
+            currency=b["currency_format_currency_symbol"],
+        )
+        for b in budget_accts
+    ]
 
 
 def _pretty(budget_accts: list[dict[str, Any]]) -> str:
@@ -197,41 +290,50 @@ def _pretty(budget_accts: list[dict[str, Any]]) -> str:
 
 
 def fetch_transactions(
-    cur: sqlite3.Cursor, balance: BudgetAccount
-) -> list[Transaction]:
+    cur: sqlite3.Cursor, budget_accts: list[BudgetAccount]
+) -> list[list[Transaction]]:
+    assert budget_accts
+
     unreconciled = cur.execute(
-        """
+        f"""
             SELECT
                 id
+                , budget_id
+                , account_id
                 , amount
                 , payee_name
                 , cleared
             FROM transactions
             WHERE
                 TRUE
-                AND budget_id = ?
-                AND account_id = ?
                 AND cleared != 'reconciled'
                 AND NOT deleted
+                AND ({" OR ".join("account_id = ?" for _ in budget_accts)})
             ORDER BY date
             """,
-        (balance.budget_id, balance.account_id),
+        tuple(b.account_id for b in budget_accts),
     ).fetchall()
 
-    return [
-        Transaction(
-            balance.budget_id,
-            u["id"],
-            Decimal(-u["amount"]) / 1000,
-            u["payee_name"],
-            u["cleared"],
+    grouped: dict[str, list[Transaction]] = {b.account_id: [] for b in budget_accts}
+    for u in unreconciled:
+        grouped[u["account_id"]].append(
+            Transaction(
+                u["budget_id"],
+                u["id"],
+                Decimal(-u["amount"]) / 1000,
+                u["payee_name"],
+                u["cleared"],
+            )
         )
-        for u in unreconciled
-    ]
+
+    return list(grouped.values())
 
 
 def find_to_reconcile(
-    transactions: list[Transaction], account_balance: Decimal, target: Decimal
+    transactions: list[Transaction],
+    account_balance: Decimal,
+    target: Decimal,
+    progress_desc: str,
 ) -> tuple[tuple[Transaction, ...], bool]:
     cleared, uncleared = partition(transactions, lambda t: t.cleared == "cleared")
 
@@ -241,7 +343,7 @@ def find_to_reconcile(
 
     with tldm[Never](
         total=2 ** len(uncleared),
-        desc="Testing combinations",
+        desc=progress_desc,
         complete_bar_on_early_finish=True,
     ) as pbar:
         for n in range(len(uncleared) + 1):
@@ -258,10 +360,13 @@ def find_to_reconcile(
 
 
 async def do_reconcile(
-    token: str, budget_id: str, to_reconcile: Sequence[Transaction]
+    token: str,
+    budget_id: str,
+    to_reconcile: Sequence[Transaction],
+    progress_desc: str,
 ) -> None:
     yc = YnabClient(token)
-    with tldm[Never](total=len(to_reconcile), desc="Reconciling") as pbar:
+    with tldm[Never](total=len(to_reconcile), desc=progress_desc) as pbar:
         async with aiohttp.ClientSession() as session:
             try:
                 await yc.reconcile(
