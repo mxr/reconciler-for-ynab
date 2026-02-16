@@ -105,7 +105,7 @@ options:
                         Path to sqlite-export-for-ynab SQLite DB file (respects sqlite-export-for-
                         ynab configuration)
   --sqlite-export-for-ynab-full-refresh
-                        Whether **DROP ALL TABLES** and fetch all budget data again. If unset,
+                        Whether to **DROP ALL TABLES** and fetch all budget data again. If unset,
                         this tool only does an incremental refresh
   --version             show program's version number and exit
 ```
