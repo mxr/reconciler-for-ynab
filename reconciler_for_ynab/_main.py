@@ -236,11 +236,13 @@ async def _reconcile_account(
 def fetch_budget_accts(
     cur: sqlite3.Cursor, account_name_regexes: list[str]
 ) -> list[BudgetAccount]:
-    budget_accts: list[dict[str, Any]] = []
+    order_by_case = " ".join(
+        f"WHEN REGEXP(accounts.name, ?) THEN {i}"
+        for i, _ in enumerate(account_name_regexes)
+    )
 
-    for account_name_regex in account_name_regexes:
-        matches = cur.execute(
-            """
+    budget_accts = cur.execute(
+        f"""
             SELECT
                 budgets.id as budget_id
                 , budgets.name as budget_name
@@ -257,18 +259,23 @@ def fetch_budget_accts(
                 TRUE
                 AND NOT deleted
                 AND NOT closed
-                AND REGEXP(accounts.name, ?)
-            ORDER BY budget_name, account_name
+                AND ({" OR ".join("REGEXP(accounts.name, ?)" for _ in account_name_regexes)})
+            ORDER BY
+                CASE
+                    {order_by_case}
+                END,
+                budget_name,
+                account_name
             """,
-            (account_name_regex,),
-        ).fetchall()
-        if len(matches) != 1:
-            raise ValueError(
-                f"\n❌ Must have 1 total account matches for account regex {account_name_regex!r}, "
-                f"but instead found: {_pretty(matches)}\n"
-                "Change account regexes to be more precise and try again."
-            )
-        budget_accts.extend(matches)
+        tuple(account_name_regexes + account_name_regexes),
+    ).fetchall()
+
+    if len(budget_accts) != len(account_name_regexes):
+        raise ValueError(
+            f"\n❌ Must have {len(account_name_regexes)} total account matches for the supplied pairs, "
+            f"but instead found: {_pretty(budget_accts)}\n"
+            "Change account regexes to be more precise and try again."
+        )
 
     return [
         BudgetAccount(
