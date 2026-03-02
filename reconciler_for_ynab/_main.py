@@ -255,9 +255,12 @@ def fetch_budget_accts(
                 AND NOT deleted
                 AND NOT closed
                 AND ({" OR ".join("REGEXP(accounts.name, ?)" for _ in account_name_regexes)})
-            ORDER BY budget_name, account_name
+            ORDER BY
+                CASE
+                    {" ".join(f"WHEN REGEXP(accounts.name, ?) THEN {i}" for i, _ in enumerate(account_name_regexes))}
+                END
             """,
-        tuple(account_name_regexes),
+        (*account_name_regexes, *account_name_regexes),
     ).fetchall()
 
     if len(budget_accts) != len(account_name_regexes):
