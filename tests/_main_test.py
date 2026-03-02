@@ -179,6 +179,41 @@ def test_main_mode_batch(sync, db, monkeypatch):
 
 @patch("reconciler_for_ynab._main.sync")
 @pytest.mark.usefixtures(db.__name__)
+def test_main_mode_batch_preserves_pair_order(sync, db, monkeypatch, capsys):
+    monkeypatch.setenv(_ENV_TOKEN, TOKEN)
+    with sqlite3.connect(db) as con:
+        con.execute(
+            """
+            UPDATE transactions
+            SET cleared = 'uncleared'
+            WHERE account_id IN (
+                SELECT id FROM accounts WHERE name IN ('Checking', 'Credit Card')
+            )
+            AND cleared != 'reconciled'
+            """
+        )
+
+    ret = main(
+        (
+            "--mode",
+            "batch",
+            "--account-target-pairs",
+            "Credit=200",
+            "Checking=430",
+            "--sqlite-export-for-ynab-db",
+            db,
+        )
+    )
+
+    out, _ = capsys.readouterr()
+    sync.assert_called()
+    assert ret == 0
+    assert "[Checking] Balance already reconciled to target" in out
+    assert "[Credit Card] Balance already reconciled to target" in out
+
+
+@patch("reconciler_for_ynab._main.sync")
+@pytest.mark.usefixtures(db.__name__)
 @pytest.mark.parametrize(
     ("regex", "substr"),
     (

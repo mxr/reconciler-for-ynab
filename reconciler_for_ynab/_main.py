@@ -236,8 +236,11 @@ async def _reconcile_account(
 def fetch_budget_accts(
     cur: sqlite3.Cursor, account_name_regexes: list[str]
 ) -> list[BudgetAccount]:
-    budget_accts = cur.execute(
-        f"""
+    budget_accts: list[dict[str, Any]] = []
+
+    for account_name_regex in account_name_regexes:
+        matches = cur.execute(
+            """
             SELECT
                 budgets.id as budget_id
                 , budgets.name as budget_name
@@ -254,18 +257,18 @@ def fetch_budget_accts(
                 TRUE
                 AND NOT deleted
                 AND NOT closed
-                AND ({" OR ".join("REGEXP(accounts.name, ?)" for _ in account_name_regexes)})
+                AND REGEXP(accounts.name, ?)
             ORDER BY budget_name, account_name
             """,
-        tuple(account_name_regexes),
-    ).fetchall()
-
-    if len(budget_accts) != len(account_name_regexes):
-        raise ValueError(
-            f"\n❌ Must have {len(account_name_regexes)} total account matches for the supplied pairs, "
-            f"but instead found: {_pretty(budget_accts)}\n"
-            "Change account regexes to be more precise and try again."
-        )
+            (account_name_regex,),
+        ).fetchall()
+        if len(matches) != 1:
+            raise ValueError(
+                f"\n❌ Must have 1 total account matches for account regex {account_name_regex!r}, "
+                f"but instead found: {_pretty(matches)}\n"
+                "Change account regexes to be more precise and try again."
+            )
+        budget_accts.extend(matches)
 
     return [
         BudgetAccount(
