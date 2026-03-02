@@ -236,11 +236,6 @@ async def _reconcile_account(
 def fetch_budget_accts(
     cur: sqlite3.Cursor, account_name_regexes: list[str]
 ) -> list[BudgetAccount]:
-    order_by_case = " ".join(
-        f"WHEN REGEXP(accounts.name, ?) THEN {i}"
-        for i, _ in enumerate(account_name_regexes)
-    )
-
     budget_accts = cur.execute(
         f"""
             SELECT
@@ -262,12 +257,12 @@ def fetch_budget_accts(
                 AND ({" OR ".join("REGEXP(accounts.name, ?)" for _ in account_name_regexes)})
             ORDER BY
                 CASE
-                    {order_by_case}
+                    {" ".join(f"WHEN REGEXP(accounts.name, ?) THEN {i}" for i, _ in enumerate(account_name_regexes))}
                 END,
                 budget_name,
                 account_name
             """,
-        tuple(account_name_regexes + account_name_regexes),
+        (*account_name_regexes, *account_name_regexes),
     ).fetchall()
 
     if len(budget_accts) != len(account_name_regexes):
