@@ -258,9 +258,7 @@ def fetch_budget_accts(
             ORDER BY
                 CASE
                     {" ".join(f"WHEN REGEXP(accounts.name, ?) THEN {i}" for i, _ in enumerate(account_name_regexes))}
-                END,
-                budget_name,
-                account_name
+                END
             """,
         (*account_name_regexes, *account_name_regexes),
     ).fetchall()
