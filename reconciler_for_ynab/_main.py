@@ -31,7 +31,7 @@ _ENV_TOKEN = "YNAB_PERSONAL_ACCESS_TOKEN"
 
 _PACKAGE = "reconciler-for-ynab"
 
-_NEGATIVE_BAL_ACCOOUNT_TYPES = frozenset(("checking", "savings", "cash"))
+_NEG_BAL_ACCT_TYPES = frozenset(("checking", "savings", "cash"))
 
 
 @dataclass(frozen=True)
@@ -163,13 +163,8 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
                         token,
                         acct,
                         txns,
-                        target=rt
-                        * (
-                            -1
-                            if acct.account_type in _NEGATIVE_BAL_ACCOOUNT_TYPES
-                            else 1
-                        ),
-                        reconcile=reconcile,
+                        rt * (-1 if acct.account_type in _NEG_BAL_ACCT_TYPES else 1),
+                        reconcile,
                     )
                 )
                 for rt, acct, txns in zip(
