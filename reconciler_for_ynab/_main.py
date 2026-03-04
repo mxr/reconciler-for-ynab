@@ -179,7 +179,7 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
         )
     )
 
-    print(f"{'Batch reconciling' if len(rets) > 1 else 'Reconciling'} done.")
+    print("Done.")
 
     return max(rets)
 
