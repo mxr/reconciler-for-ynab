@@ -31,7 +31,7 @@ _ENV_TOKEN = "YNAB_PERSONAL_ACCESS_TOKEN"
 
 _PACKAGE = "reconciler-for-ynab"
 
-_NEGATIVE_BAL_ACCOOUNT_TYPES = frozenset(("checking", "savings", "cash"))
+_NEG_BAL_ACCT_TYPES = frozenset(("checking", "savings", "cash"))
 
 
 @dataclass(frozen=True)
@@ -155,27 +155,26 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
         budget_accts = fetch_budget_accts(cur, account_name_regexes)
         transactions = fetch_transactions(cur, budget_accts)
 
-    tasks = [
-        asyncio.create_task(
-            _reconcile_account(
-                token,
-                acct,
-                txns,
-                rt * (-1 if acct.account_type in _NEGATIVE_BAL_ACCOOUNT_TYPES else 1),
-                reconcile,
+    rets = list(
+        await asyncio.gather(
+            *(
+                asyncio.create_task(
+                    _reconcile_account(
+                        token,
+                        acct,
+                        txns,
+                        rt * (-1 if acct.account_type in _NEG_BAL_ACCT_TYPES else 1),
+                        reconcile,
+                    )
+                )
+                for rt, acct, txns in zip(
+                    raw_targets, budget_accts, transactions, strict=True
+                )
             )
         )
-        for rt, acct, txns in zip(raw_targets, budget_accts, transactions, strict=True)
-    ]
-    rets = []
-    for task in asyncio.as_completed(tasks):
-        ret, logs = await task
-        for line in logs:
-            print(line)
-        rets.append(ret)
+    )
 
-    if len(rets) > 1:
-        print("Batch reconciling done.")
+    print("Done.")
 
     return max(rets)
 
@@ -198,9 +197,8 @@ async def _reconcile_account(
     transactions: list[Transaction],
     target: Decimal,
     reconcile: bool,
-) -> tuple[int, list[str]]:
+) -> int:
     prefix = f"[{budget_acct.account_name}]"
-    logs = []
 
     to_reconcile, balance_met = find_to_reconcile(
         transactions,
@@ -211,15 +209,20 @@ async def _reconcile_account(
 
     if not to_reconcile:
         if balance_met:
-            logs.append(f"{prefix} Balance already reconciled to target")
-            return 0, logs
+            print(f"{prefix} Balance already reconciled to target")
+            return 0
         else:
-            logs.append(f"{prefix} No match found")
-            return 1, logs
+            print(f"{prefix} No match found")
+            return 1
 
-    logs.append(f"{prefix} Match found:")
-    for t in sorted(to_reconcile, key=lambda t: t.amount):
-        logs.append(f"{prefix} * {t.pretty(budget_acct.currency, 'en_US')}")
+    print(
+        f"{prefix} Match found:",
+        *(
+            f"{prefix} * {t.pretty(budget_acct.currency, 'en_US')}"
+            for t in sorted(to_reconcile, key=lambda t: t.amount)
+        ),
+        sep=os.linesep,
+    )
 
     if reconcile:
         await do_reconcile(
@@ -229,8 +232,7 @@ async def _reconcile_account(
             progress_desc=f"{prefix} Reconciling",
         )
 
-    logs.append(f"{prefix} Done")
-    return 0, logs
+    return 0
 
 
 def fetch_budget_accts(
