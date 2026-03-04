@@ -238,7 +238,6 @@ async def _reconcile_account(
             progress_desc=f"{prefix} Reconciling",
         )
 
-    print(f"{prefix} Done")
     return 0
 
 
