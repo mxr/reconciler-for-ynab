@@ -163,8 +163,12 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
                         token,
                         acct,
                         txns,
-                        (-1 if acct.account_type in _NEGATIVE_BAL_ACCOOUNT_TYPES else 1)
-                        * rt,
+                        rt
+                        * (
+                            -1
+                            if acct.account_type in _NEGATIVE_BAL_ACCOOUNT_TYPES
+                            else 1
+                        ),
                         reconcile,
                     )
                 )
