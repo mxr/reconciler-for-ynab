@@ -13,13 +13,13 @@ from reconciler_for_ynab._main import _ENV_TOKEN
 from reconciler_for_ynab._main import _PACKAGE
 from reconciler_for_ynab._main import _row_factory
 from reconciler_for_ynab._main import do_reconcile
-from reconciler_for_ynab._main import fetch_budget_accts
+from reconciler_for_ynab._main import fetch_plan_accts
 from reconciler_for_ynab._main import fetch_transactions
 from reconciler_for_ynab._main import main
 from reconciler_for_ynab._main import YnabClient
-from testing.fixtures import BUDGET_ID
 from testing.fixtures import db
 from testing.fixtures import mock_aioresponses
+from testing.fixtures import PLAN_ID
 from testing.fixtures import TOKEN
 
 
@@ -217,7 +217,7 @@ def test_main_mode_batch_preserves_pair_order(sync, db, monkeypatch, capsys):
 @pytest.mark.parametrize(
     ("regex", "substr"),
     (
-        pytest.param("c", "My Budget", id="more than 1"),
+        pytest.param("c", "My Plan", id="more than 1"),
         pytest.param("foo", "nothing!", id="none"),
     ),
 )
@@ -253,10 +253,10 @@ async def test_main_do_reconcile(sync, db, mock_aioresponses):
 
         cur = con.cursor()
 
-        transactions = fetch_transactions(cur, fetch_budget_accts(cur, ["checking"]))[0]
+        transactions = fetch_transactions(cur, fetch_plan_accts(cur, ["checking"]))[0]
 
     mock_aioresponses.patch(
-        re.compile("https://api.ynab.com/v1/budgets/.+/transactions"),
+        re.compile("https://api.ynab.com/v1/plans/.+/transactions"),
         body=json.dumps(
             {
                 "data": {
@@ -268,7 +268,7 @@ async def test_main_do_reconcile(sync, db, mock_aioresponses):
         ),
     )
 
-    await do_reconcile(TOKEN, BUDGET_ID, transactions, "Reconciling")
+    await do_reconcile(TOKEN, PLAN_ID, transactions, "Reconciling")
 
 
 @pytest.mark.asyncio
@@ -284,10 +284,10 @@ async def test_main_do_reconcile_error_4034(sync, db, mock_aioresponses):
 
         cur = con.cursor()
 
-        transactions = fetch_transactions(cur, fetch_budget_accts(cur, ["checking"]))[0]
+        transactions = fetch_transactions(cur, fetch_plan_accts(cur, ["checking"]))[0]
 
     mock_aioresponses.patch(
-        re.compile("https://api.ynab.com/v1/budgets/.+/transactions"),
+        re.compile("https://api.ynab.com/v1/plans/.+/transactions"),
         body=json.dumps(
             {
                 "data": {
@@ -302,10 +302,10 @@ async def test_main_do_reconcile_error_4034(sync, db, mock_aioresponses):
 
     for t in transactions:
         mock_aioresponses.patch(
-            re.compile("https://api.ynab.com/v1/budgets/.+/transactions"),
+            re.compile("https://api.ynab.com/v1/plans/.+/transactions"),
             body=json.dumps(
                 {"data": {"transactions": [{"id": t.id, "cleared": "reconciled"}]}}
             ),
         )
 
-    await do_reconcile(TOKEN, BUDGET_ID, transactions, "Reconciling")
+    await do_reconcile(TOKEN, PLAN_ID, transactions, "Reconciling")

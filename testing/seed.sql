@@ -1,20 +1,20 @@
-CREATE TABLE budgets (
+CREATE TABLE plans (
     id TEXT PRIMARY KEY
     , name TEXT
     , currency_format_currency_symbol TEXT
 )
 ;
 
-INSERT INTO budgets VALUES (
+INSERT INTO plans VALUES (
     'a20542ae-bb3e-4282-8b3e-df3bdea4be10'
-    , 'My Budget'
+    , 'My Plan'
     , '$'
 )
 ;
 
 CREATE TABLE accounts (
     id TEXT PRIMARY KEY
-    , budget_id TEXT
+    , plan_id TEXT
     , cleared_balance INT
     , closed BOOLEAN
     , deleted BOOLEAN
@@ -26,7 +26,7 @@ CREATE TABLE accounts (
 INSERT INTO accounts VALUES (
     '8fe2a49b-17b9-47a1-8aaa-c60d661e7f25'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , 430000
@@ -40,7 +40,7 @@ INSERT INTO accounts VALUES (
 INSERT INTO accounts VALUES (
     'ab56a1c8-439e-4eaf-931b-37f2d68d1cf5'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , -200000
@@ -53,7 +53,7 @@ INSERT INTO accounts VALUES (
 
 CREATE TABLE transactions (
     id TEXT PRIMARY KEY
-    , budget_id TEXT
+    , plan_id TEXT
     , account_id TEXT
     , "date" TEXT
     , amount INT
@@ -66,7 +66,7 @@ CREATE TABLE transactions (
 INSERT INTO transactions VALUES (
     'ae3d9f6b-07f1-4c49-9137-5133c8bf0500'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -85,7 +85,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     '9a97f337-28db-4c2d-990f-d9ec0e9bc765'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -104,7 +104,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     'c479c335-b54f-48b9-8b74-49a907f1b3f2'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -123,7 +123,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     '96817e5f-d272-4012-9790-38f8a8e2be90'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -143,7 +143,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     'eeef0922-b226-4f8a-bf00-66d4d98e348c'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -163,7 +163,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     '21c45599-4113-4888-9969-66d42553d870'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -182,7 +182,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     '956ff61f-b0e4-4f36-bf7d-f31d008ff7e4'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -201,7 +201,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     'c9ca467d-e89d-4d0d-8356-f37d4f798c5f'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -220,7 +220,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     '258b33fb-a2b2-4833-9274-05697c68ff1d'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (
@@ -240,7 +240,7 @@ INSERT INTO transactions VALUES (
 INSERT INTO transactions VALUES (
     'd9faa297-f59e-4516-bcbf-664b298ff09e'
     , (
-        SELECT id FROM budgets
+        SELECT id FROM plans
         ORDER BY id LIMIT 1
     )
     , (

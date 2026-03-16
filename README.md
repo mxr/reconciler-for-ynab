@@ -13,10 +13,10 @@ Suppose I want to automatically reconcile my credit card ending in 1234 to \$1,4
 ```console
 $ reconciler-for-ynab --reconcile --account-name-regex 'credit.+1234' --target 1471.32
 ** Refreshing SQLite DB **
-Fetching budget data...
-Budget Data: 100%|███████████████████████████████████████████████████████| 10/10 [00:00<00:00, 52.24it/s]
+Fetching plan data...
+Plans: 100%|█████████████████████████████████████████████████████████████| 10/10 [00:00<00:00, 52.24it/s]
 Done
-Inserting budget data...
+Inserting plan data...
 Payees: 100%|████████████████████████████████████████████████████████████| 7/7 [00:00<00:00, 2252.93it/s]
 Transactions: 100%|███████████████████████████████████████████████████| 14/14 [00:00<00:00, 10605.07it/s]
 Done
@@ -105,7 +105,7 @@ options:
                         Path to sqlite-export-for-ynab SQLite DB file (respects sqlite-export-for-
                         ynab configuration)
   --sqlite-export-for-ynab-full-refresh
-                        Whether to **DROP ALL TABLES** and fetch all budget data again. If unset,
+                        Whether to **DROP ALL TABLES** and fetch all plan data again. If unset,
                         this tool only does an incremental refresh
   --version             show program's version number and exit
 ```
