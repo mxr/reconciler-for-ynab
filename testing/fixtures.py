@@ -8,7 +8,7 @@ import pytest
 from aioresponses import aioresponses
 
 
-BUDGET_ID_1 = str(uuid4())
+PLAN_ID_1 = str(uuid4())
 
 
 @pytest.fixture()
@@ -31,4 +31,4 @@ def mock_aioresponses():
 TOKEN = f"token-{uuid4()}"
 
 # the below must match seed.sql
-BUDGET_ID = "a20542ae-bb3e-4282-8b3e-df3bdea4be10"
+PLAN_ID = "a20542ae-bb3e-4282-8b3e-df3bdea4be10"

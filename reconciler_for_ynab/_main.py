@@ -36,7 +36,7 @@ _NEG_BAL_ACCT_TYPES = frozenset(("checking", "savings", "cash"))
 
 @dataclass(frozen=True)
 class Transaction:
-    budget_id: str
+    plan_id: str
     id: str
     amount: Decimal
     payee: str
@@ -47,8 +47,8 @@ class Transaction:
 
 
 @dataclass(frozen=True)
-class BudgetAccount:
-    budget_id: str
+class PlanAccount:
+    plan_id: str
     account_name: str
     account_id: str
     account_type: str
@@ -95,7 +95,7 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--sqlite-export-for-ynab-full-refresh",
         action="store_true",
-        help="Whether to **DROP ALL TABLES** and fetch all budget data again. If unset, this tool only does an incremental refresh",
+        help="Whether to **DROP ALL TABLES** and fetch all plan data again. If unset, this tool only does an incremental refresh",
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {version(_PACKAGE)}"
@@ -152,8 +152,8 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
 
         cur = con.cursor()
 
-        budget_accts = fetch_budget_accts(cur, account_name_regexes)
-        transactions = fetch_transactions(cur, budget_accts)
+        plan_accts = fetch_plan_accts(cur, account_name_regexes)
+        transactions = fetch_transactions(cur, plan_accts)
 
     rets = list(
         await asyncio.gather(
@@ -168,7 +168,7 @@ async def async_main(argv: Sequence[str] | None = None) -> int:
                     )
                 )
                 for rt, acct, txns in zip(
-                    raw_targets, budget_accts, transactions, strict=True
+                    raw_targets, plan_accts, transactions, strict=True
                 )
             )
         )
@@ -193,16 +193,16 @@ def _parse_account_targets(
 
 async def _reconcile_account(
     token: str,
-    budget_acct: BudgetAccount,
+    plan_acct: PlanAccount,
     transactions: list[Transaction],
     target: Decimal,
     reconcile: bool,
 ) -> int:
-    prefix = f"[{budget_acct.account_name}]"
+    prefix = f"[{plan_acct.account_name}]"
 
     to_reconcile, balance_met = find_to_reconcile(
         transactions,
-        budget_acct.cleared_balance,
+        plan_acct.cleared_balance,
         target,
         progress_desc=f"{prefix} Testing combinations",
     )
@@ -218,7 +218,7 @@ async def _reconcile_account(
     print(
         f"{prefix} Match found:",
         *(
-            f"{prefix} * {t.pretty(budget_acct.currency, 'en_US')}"
+            f"{prefix} * {t.pretty(plan_acct.currency, 'en_US')}"
             for t in sorted(to_reconcile, key=lambda t: t.amount)
         ),
         sep=os.linesep,
@@ -227,7 +227,7 @@ async def _reconcile_account(
     if reconcile:
         await do_reconcile(
             token,
-            budget_acct.budget_id,
+            plan_acct.plan_id,
             to_reconcile,
             progress_desc=f"{prefix} Reconciling",
         )
@@ -235,23 +235,23 @@ async def _reconcile_account(
     return 0
 
 
-def fetch_budget_accts(
+def fetch_plan_accts(
     cur: sqlite3.Cursor, account_name_regexes: list[str]
-) -> list[BudgetAccount]:
-    budget_accts = cur.execute(
+) -> list[PlanAccount]:
+    plan_accts = cur.execute(
         f"""
             SELECT
-                budgets.id as budget_id
-                , budgets.name as budget_name
+                plans.id as plan_id
+                , plans.name as plan_name
                 , accounts.name as account_name
                 , accounts.type as account_type
                 , accounts.id as account_id
                 , accounts.type as account_type
                 , accounts.cleared_balance
-                , budgets.currency_format_currency_symbol
+                , plans.currency_format_currency_symbol
             FROM accounts
-            JOIN budgets
-                ON accounts.budget_id = budgets.id
+            JOIN plans
+                ON accounts.plan_id = plans.id
             WHERE
                 TRUE
                 AND NOT deleted
@@ -265,45 +265,45 @@ def fetch_budget_accts(
         (*account_name_regexes, *account_name_regexes),
     ).fetchall()
 
-    if len(budget_accts) != len(account_name_regexes):
+    if len(plan_accts) != len(account_name_regexes):
         raise ValueError(
             f"\n❌ Must have {len(account_name_regexes)} total account matches for the supplied pairs, "
-            f"but instead found: {_pretty(budget_accts)}\n"
+            f"but instead found: {_pretty(plan_accts)}\n"
             "Change account regexes to be more precise and try again."
         )
 
     return [
-        BudgetAccount(
-            budget_id=b["budget_id"],
-            account_name=b["account_name"],
-            account_id=b["account_id"],
-            cleared_balance=Decimal(-b["cleared_balance"]) / 1000,
-            account_type=b["account_type"],
-            currency=b["currency_format_currency_symbol"],
+        PlanAccount(
+            plan_id=pl["plan_id"],
+            account_name=pl["account_name"],
+            account_id=pl["account_id"],
+            cleared_balance=Decimal(-pl["cleared_balance"]) / 1000,
+            account_type=pl["account_type"],
+            currency=pl["currency_format_currency_symbol"],
         )
-        for b in budget_accts
+        for pl in plan_accts
     ]
 
 
-def _pretty(budget_accts: list[dict[str, Any]]) -> str:
-    if not budget_accts:
+def _pretty(plan_accts: list[dict[str, Any]]) -> str:
+    if not plan_accts:
         return "nothing!"
 
     return "\n" + "\n".join(
-        sorted(f" * {b['budget_name']} - {b['account_name']}" for b in budget_accts)
+        sorted(f" * {pl['plan_name']} - {pl['account_name']}" for pl in plan_accts)
     )
 
 
 def fetch_transactions(
-    cur: sqlite3.Cursor, budget_accts: list[BudgetAccount]
+    cur: sqlite3.Cursor, plan_accts: list[PlanAccount]
 ) -> list[list[Transaction]]:
-    assert budget_accts
+    assert plan_accts
 
     unreconciled = cur.execute(
         f"""
             SELECT
                 id
-                , budget_id
+                , plan_id
                 , account_id
                 , amount
                 , payee_name
@@ -313,17 +313,17 @@ def fetch_transactions(
                 TRUE
                 AND cleared != 'reconciled'
                 AND NOT deleted
-                AND ({" OR ".join("account_id = ?" for _ in budget_accts)})
+                AND ({" OR ".join("account_id = ?" for _ in plan_accts)})
             ORDER BY date
             """,
-        tuple(b.account_id for b in budget_accts),
+        tuple(pl.account_id for pl in plan_accts),
     ).fetchall()
 
-    grouped: dict[str, list[Transaction]] = {b.account_id: [] for b in budget_accts}
+    grouped: dict[str, list[Transaction]] = {pl.account_id: [] for pl in plan_accts}
     for u in unreconciled:
         grouped[u["account_id"]].append(
             Transaction(
-                u["budget_id"],
+                u["plan_id"],
                 u["id"],
                 Decimal(-u["amount"]) / 1000,
                 u["payee_name"],
@@ -366,7 +366,7 @@ def find_to_reconcile(
 
 async def do_reconcile(
     token: str,
-    budget_id: str,
+    plan_id: str,
     to_reconcile: Sequence[Transaction],
     progress_desc: str,
 ) -> None:
@@ -374,13 +374,11 @@ async def do_reconcile(
     with tldm[Never](total=len(to_reconcile), desc=progress_desc) as pbar:
         async with aiohttp.ClientSession() as session:
             try:
-                await yc.reconcile(
-                    session, pbar, budget_id, [t.id for t in to_reconcile]
-                )
+                await yc.reconcile(session, pbar, plan_id, [t.id for t in to_reconcile])
             except Error4034:
                 await asyncio.gather(
                     *(
-                        yc.reconcile(session, pbar, to_reconcile[0].budget_id, [t.id])
+                        yc.reconcile(session, pbar, to_reconcile[0].plan_id, [t.id])
                         for t in to_reconcile
                     )
                 )
@@ -421,12 +419,12 @@ class YnabClient:
         self,
         session: aiohttp.ClientSession,
         pbar: tldm[Never],
-        budget_id: str,
+        plan_id: str,
         transaction_ids: list[str],
     ) -> None:
         reconciled = [{"id": t, "cleared": "reconciled"} for t in transaction_ids]
 
-        url = f"https://api.ynab.com/v1/budgets/{budget_id}/transactions"
+        url = f"https://api.ynab.com/v1/plans/{plan_id}/transactions"
 
         async with session.request(
             "PATCH", url, headers=self.headers, json={"transactions": reconciled}
