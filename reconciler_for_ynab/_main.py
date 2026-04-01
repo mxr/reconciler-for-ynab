@@ -212,7 +212,10 @@ async def _reconcile_account(
             print(f"{prefix} Balance already reconciled to target")
             return 0
         else:
-            print(f"{prefix} No match found")
+            pretty_target = format_currency(
+                target, currency=plan_acct.currency, locale="en_US"
+            )
+            print(f"{prefix} No match found for target {pretty_target}")
             return 1
 
     print(
