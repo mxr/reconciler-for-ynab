@@ -33,6 +33,8 @@ _PACKAGE = "reconciler-for-ynab"
 
 _NEG_BAL_ACCT_TYPES = frozenset(("checking", "savings", "cash"))
 
+_LOCALE_EN_US = "en_US"
+
 
 @dataclass(frozen=True)
 class Transaction:
@@ -213,7 +215,7 @@ async def _reconcile_account(
             return 0
         else:
             pretty_target = format_currency(
-                target, currency=plan_acct.currency, locale="en_US"
+                target, currency=plan_acct.currency, locale=_LOCALE_EN_US
             )
             print(f"{prefix} No match found for target {pretty_target}")
             return 1
@@ -221,7 +223,7 @@ async def _reconcile_account(
     print(
         f"{prefix} Match found:",
         *(
-            f"{prefix} * {t.pretty(plan_acct.currency, 'en_US')}"
+            f"{prefix} * {t.pretty(plan_acct.currency, _LOCALE_EN_US)}"
             for t in sorted(to_reconcile, key=lambda t: t.amount)
         ),
         sep=os.linesep,
