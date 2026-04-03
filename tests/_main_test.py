@@ -42,8 +42,15 @@ def test_main_version(capsys):
 @pytest.mark.parametrize(
     ("target", "expected", "substr"),
     (
-        pytest.param(500, 0, None, id="reconciles cleared and uncleared"),
-        pytest.param(430, 0, None, id="reconciles only cleared"),
+        pytest.param(
+            500,
+            0,
+            "[Checking] *    -$60.00 - Payee",
+            id="reconciles cleared and uncleared",
+        ),
+        pytest.param(
+            430, 0, "[Checking] *    -$30.00 - Payee", id="reconciles only cleared"
+        ),
         pytest.param(
             600, 1, "[Checking] No match found for target -$600.00", id="no match"
         ),
@@ -65,8 +72,7 @@ def test_main(sync, db, monkeypatch, capsys, target, expected, substr):
     out, _ = capsys.readouterr()
     sync.assert_called()
     assert ret == expected
-    if substr is not None:
-        assert substr in out
+    assert substr in out
 
 
 @patch("reconciler_for_ynab._main.sync")

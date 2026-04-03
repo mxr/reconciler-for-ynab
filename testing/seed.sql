@@ -61,6 +61,7 @@ CREATE TABLE transactions (
     , account_id TEXT
     , "date" TEXT
     , amount INT
+    , amount_formatted TEXT
     , payee_name TEXT
     , cleared TEXT
     , deleted BOOLEAN
@@ -82,6 +83,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , 400000
+    , '-$400.00'
     , 'Payee'
     , 'reconciled'
     , 0
@@ -103,6 +105,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , 30000
+    , '-$30.00'
     , 'Payee'
     , 'cleared'
     , 0
@@ -124,6 +127,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , 60000
+    , '-$60.00'
     , 'Payee'
     , 'uncleared'
     , 0
@@ -145,6 +149,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , 20000
+    , '-$20.00'
     , 'Payee'
     , 'uncleared'
     , 0
@@ -167,6 +172,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , 10000
+    , '-$10.00'
     , 'Payee'
     , 'uncleared'
     , 0
@@ -189,6 +195,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , -400000
+    , '$400.00'
     , 'Payee'
     , 'reconciled'
     , 0
@@ -210,6 +217,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , -30000
+    , '$30.00'
     , 'Payee'
     , 'cleared'
     , 0
@@ -231,6 +239,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , -60000
+    , '$60.00'
     , 'Payee'
     , 'uncleared'
     , 0
@@ -252,6 +261,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , -20000
+    , '$20.00'
     , 'Payee'
     , 'uncleared'
     , 0
@@ -274,6 +284,7 @@ INSERT INTO transactions VALUES (
     )
     , '2025-08-01'
     , -10000
+    , '$10.00'
     , 'Payee'
     , 'uncleared'
     , 0

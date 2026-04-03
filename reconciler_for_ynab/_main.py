@@ -41,11 +41,12 @@ class Transaction:
     plan_id: str
     id: str
     amount: Decimal
+    amount_formatted: str
     payee: str
     cleared: str
 
-    def pretty(self, currency: str, locale: str | None) -> str:
-        return f"{format_currency(self.amount, currency=currency, locale=locale):>10} - {self.payee}"
+    def pretty(self) -> str:
+        return f"{self.amount_formatted:>10} - {self.payee}"
 
 
 @dataclass(frozen=True)
@@ -223,7 +224,7 @@ async def _reconcile_account(
     print(
         f"{prefix} Match found:",
         *(
-            f"{prefix} * {t.pretty(plan_acct.currency, _LOCALE_EN_US)}"
+            f"{prefix} * {t.pretty()}"
             for t in sorted(to_reconcile, key=lambda t: t.amount)
         ),
         sep=os.linesep,
@@ -311,6 +312,7 @@ def fetch_transactions(
                 , plan_id
                 , account_id
                 , amount
+                , amount_formatted
                 , payee_name
                 , cleared
             FROM transactions
@@ -331,6 +333,7 @@ def fetch_transactions(
                 u["plan_id"],
                 u["id"],
                 Decimal(-u["amount"]) / 1000,
+                u["amount_formatted"],
                 u["payee_name"],
                 u["cleared"],
             )
