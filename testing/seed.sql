@@ -2,6 +2,7 @@ CREATE TABLE plans (
     id TEXT PRIMARY KEY
     , name TEXT
     , currency_format_currency_symbol TEXT
+    , currency_format_iso_code TEXT
 )
 ;
 
@@ -9,6 +10,7 @@ INSERT INTO plans VALUES (
     'a20542ae-bb3e-4282-8b3e-df3bdea4be10'
     , 'My Plan'
     , '$'
+    , 'USD'
 )
 ;
 

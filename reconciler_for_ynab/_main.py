@@ -253,7 +253,7 @@ def fetch_plan_accts(
                 , accounts.id as account_id
                 , accounts.type as account_type
                 , accounts.cleared_balance
-                , plans.currency_format_currency_symbol
+                , plans.currency_format_iso_code
             FROM accounts
             JOIN plans
                 ON accounts.plan_id = plans.id
@@ -284,7 +284,7 @@ def fetch_plan_accts(
             account_id=pl["account_id"],
             cleared_balance=Decimal(-pl["cleared_balance"]) / 1000,
             account_type=pl["account_type"],
-            currency=pl["currency_format_currency_symbol"],
+            currency=pl["currency_format_iso_code"],
         )
         for pl in plan_accts
     ]
